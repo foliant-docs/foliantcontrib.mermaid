@@ -2,11 +2,11 @@
 GraphViz diagrams preprocessor for Foliant documenation authoring tool.
 '''
 
-import re
+import json
+import subprocess
 
 from pathlib import Path, PosixPath
 from hashlib import md5
-from subprocess import run, PIPE, STDOUT, CalledProcessError
 
 from foliant.preprocessors.utils.combined_options import (Options,
                                                           CombinedOptions)
@@ -16,9 +16,13 @@ from foliant.preprocessors.utils.preprocessor_ext import (BasePreprocessorExt,
 OptionValue = int or float or bool or str
 
 
+PUPPETEER_CONFIG = {"args": ["--no-sandbox"]}
+
+
 class Preprocessor(BasePreprocessorExt):
     defaults = {
         'cache_dir': Path('.diagramscache'),
+        'mermaid_path': 'mmdc',
         'format': 'svg',
         'params': {}
     }
@@ -31,10 +35,31 @@ class Preprocessor(BasePreprocessorExt):
                               defaults=self.defaults)
 
         self._cache_path = self.project_path / self.config['cache_dir']
+        self._puppeteer_config_file = self._cache_path / 'puppeteer-config.json'
 
         self.logger = self.logger.getChild('mermaid')
 
         self.logger.debug(f'Preprocessor inited: {self.__dict__}')
+
+    def override_puppeteer_config(self, config: CombinedOptions or dict) -> str:
+        '''
+        Override user specified puppeteer config file.
+
+        mmdc command will only work in docker with "args": ["--no-sandbox"]
+        option in puppeteer config. If user specified this config — we add this
+        option. If not — we create a config with only this option in it.
+
+        returns path to config
+        '''
+        final_config = PUPPETEER_CONFIG
+        user_config = config['params'].get('p') or\
+            config['params'].get('puppeteerConfigFile')
+        if user_config:
+            with open(user_config) as f:
+                final_config.update(json.load(f))
+        with open(self._puppeteer_config_file, 'w') as f:
+            json.dump(final_config, f)
+        return self._puppeteer_config_file
 
     def _get_command(self,
                      options: CombinedOptions or dict,
@@ -48,11 +73,11 @@ class Preprocessor(BasePreprocessorExt):
 
         :returns: Complete image generation command
         '''
-
-        components = ['mmdc']
+        components = [options['mermaid_path']]
 
         components.append(f'-i {diagram_src_path}')
         components.append(f'-o {diagram_path}')
+        components.append(f'-p {self.override_puppeteer_config(options)}')
 
         for param_name, param_value in options['params'].items():
             if len(param_name) == 1:
@@ -96,7 +121,7 @@ class Preprocessor(BasePreprocessorExt):
         if diagram_path.exists():
             self.logger.debug('Diagram image found in cache')
 
-            return f'![{config.get("caption", "")}]({diagram_path.absolute().as_posix()})'
+            return f'![{options.get("caption", "")}]({diagram_path.absolute().as_posix()})'
 
         diagram_src_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -105,19 +130,22 @@ class Preprocessor(BasePreprocessorExt):
 
             self.logger.debug(f'Diagram definition written into the file')
 
-        try:
-            command = self._get_command(options, diagram_src_path, diagram_path)
-            self.logger.debug(f'Constructed command: {command}')
-            run(command, shell=True, check=True, stdout=PIPE, stderr=STDOUT)
+        command = self._get_command(options, diagram_src_path, diagram_path)
+        self.logger.debug(f'Constructed command: {command}')
 
-            self.logger.debug(f'Diagram image saved')
+        # when Mermaid encounters errors in diagram code, it throws error text
+        # into stderr but doesn't terminate the process, so we have to do it
+        # manually
+        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE)
+        for line in p.stderr:
+            if b"DeprecationWarning" in line:  # output is binary
+                p.terminate()
+                p.kill()
+                raise RuntimeError(f'Failed to render diagram:\n\n{line}\n\nSkipping')
 
-        # except CalledProcessError as e:
-        #     self._warning('Processing of Mermaid diagram failed.',
-        #                   context=self.get_tag_context(block),
-        #                   error=e)
-        #     return block.group(0)
-        return self._get_result(diagram_path, options)
+        self.logger.debug(f'Diagram image saved')
+
+        return f'![{options.get("caption", "")}]({diagram_path.absolute().as_posix()})'
 
     def apply(self):
         self._process_tags_for_all_files(self._process_diagrams)
