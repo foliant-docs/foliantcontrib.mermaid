@@ -2,7 +2,7 @@
 
 # Mermaid Diagrams Preprocessor for Foliant
 
-[Mermaid](https://mermaidjs.github.io/) is an open source diagram visualization tool. This preprocessor converts Mermaid diagram definitions in the your Markdown files into images on the fly during project build.
+[Mermaid](https://mermaidjs.github.io/) is an open source diagram visualization tool. This preprocessor converts Mermaid diagram definitions in your Markdown files into images on the fly during project build.
 
 ## Installation
 
@@ -10,7 +10,7 @@
 $ pip install foliantcontrib.mermaid
 ```
 
-Please not that to use this preprocessor you will also need to install Mermaid and Mermaid CLI:
+Please note that to use this preprocessor you will also need to install Mermaid and Mermaid CLI:
 
 ```bash
 $ npm install mermaid # installs locally
@@ -61,12 +61,12 @@ preprocessors:
 
 ## Usage
 
-To insert a diagram definition in your Markdown source, enclose it between `<<mermaid>...</mermaid>` tags:
+To insert a diagram definition in your Markdown source, enclose it between `<mermaid>...</mermaid>` tags:
 
 ```markdown
 Here’s a diagram:
 
-<<mermaid>
+<mermaid>
 graph TD;
     A-->B;
 </mermaid>
@@ -79,7 +79,7 @@ Tags also have an exclusive option `caption` — the markdown caption of the dia
 ```markdown
 Diagram with a caption:
 
-<<mermaid caption="Deployment diagram"
+<mermaid caption="Deployment diagram"
           params="theme: dark">
 </mermaid>
 ```
