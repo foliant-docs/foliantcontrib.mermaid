@@ -137,11 +137,15 @@ class Preprocessor(BasePreprocessorExt):
         # into stderr but doesn't terminate the process, so we have to do it
         # manually
         p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE)
+        error_text = b''
         for line in p.stderr:
-            if b"DeprecationWarning" in line:  # output is binary
+            error_text += line
+            # I know this is horrible and some day I will find a better solution
+            if b"DeprecationWarning" in line:  # this is usually the list line
                 p.terminate()
                 p.kill()
-                raise RuntimeError(f'Failed to render diagram:\n\n{line}\n\nSkipping')
+                raise RuntimeError(f'Failed to render diagram:\n\n{error_text.decode()}'
+                                   '\n\nSkipping')
 
         self.logger.debug(f'Diagram image saved')
 
