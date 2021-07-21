@@ -1,4 +1,4 @@
-![](https://img.shields.io/pypi/v/foliantcontrib.mermaid.svg)
+[![](https://img.shields.io/pypi/v/foliantcontrib.mermaid.svg)](https://pypi.org/project/foliantcontrib.mermaid/) [![](https://img.shields.io/github/v/tag/foliant-docs/foliantcontrib.mermaid.svg?label=GitHub)](https://github.com/foliant-docs/foliantcontrib.mermaid)
 
 # Mermaid Diagrams Preprocessor for Foliant
 

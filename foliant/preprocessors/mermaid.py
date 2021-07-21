@@ -5,13 +5,14 @@ GraphViz diagrams preprocessor for Foliant documenation authoring tool.
 import json
 import subprocess
 
-from pathlib import Path, PosixPath
 from hashlib import md5
+from pathlib import Path
+from pathlib import PosixPath
 
-from foliant.preprocessors.utils.combined_options import (Options,
-                                                          CombinedOptions)
-from foliant.preprocessors.utils.preprocessor_ext import (BasePreprocessorExt,
-                                                          allow_fail)
+from foliant.contrib.combined_options import CombinedOptions
+from foliant.contrib.combined_options import Options
+from foliant.preprocessors.utils.preprocessor_ext import BasePreprocessorExt
+from foliant.preprocessors.utils.preprocessor_ext import allow_fail
 
 OptionValue = int or float or bool or str
 
